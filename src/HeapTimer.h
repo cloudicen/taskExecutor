@@ -1,5 +1,5 @@
-#ifndef __HEAP_TIMER__
-#define __HEAP_TIMER__
+#ifndef __HEAP_TIMER_H__
+#define __HEAP_TIMER_H__
 
 #include <map>
 #include <unordered_set>
@@ -8,6 +8,7 @@
 #include <memory>
 #include <chrono>
 #include <queue>
+#include <future>
 
 class HeapTimer;
 
@@ -43,7 +44,23 @@ public:
     ~HeapTimer() = default;
     HeapTimer(const HeapTimer&) = delete;
 
-    int add(int timeout,std::function<void()> callBack);
+    template<typename F, typename... Args>
+    auto add(int timeout, F&& f, Args&&... args) -> std::pair<int,std::future<decltype(f(args...))>> {
+        auto taskPtr = std::make_shared<std::packaged_task<decltype(f(args...))()>>(
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+        );
+        int id = 0;
+        if (this->reusedId.empty()) {
+            id = currentNodeId++;
+        } else {
+            id = this->reusedId.top();
+            this->reusedId.pop();
+        }
+        auto expireTime = std::chrono::system_clock::now() + std::chrono::milliseconds(timeout);
+        auto [pt,success] = this->nodeRegestry.emplace(std::make_pair(id,std::make_unique<TimerNode>(id,expireTime,[taskPtr](){(*taskPtr)();})));
+        pushHeap(pt->second.get());
+        return {id,taskPtr->get_future()};
+    }
 
     int adjust(int id,int timeout);
 

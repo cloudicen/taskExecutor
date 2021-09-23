@@ -15,28 +15,12 @@ void HeapTimer::pushHeap(const TimerNode* node) {
     std::push_heap(this->timerHeap.begin(),this->timerHeap.end(),[](const TimerNode* a, const TimerNode* b){return (*a) > (*b);});
 }
 
-int HeapTimer::add(int timeout,std::function<void()> callBack) {
-    int id = 0;
-    if (this->reusedId.empty()) {
-        id = currentNodeId++;
-    } else {
-        id = this->reusedId.top();
-        this->reusedId.pop();
-    }
-    
-    auto expireTime = std::chrono::system_clock::now() + std::chrono::milliseconds(timeout);
-    auto [pt,success] = this->nodeRegestry.emplace(std::make_pair(id,std::make_unique<TimerNode>(id,expireTime,callBack)));
-    pushHeap(pt->second.get());
-    return id;
-}
-
 int HeapTimer::adjust(int id,int timeout) {
     auto pt = this->nodeRegestry.find(id);
     if (pt == this->nodeRegestry.end()) {
         return -1;
     }
 
-    //auto expireTime = std::chrono::system_clock::now() + std::chrono::milliseconds(timeout);
     pt->second->expireTime = pt->second->expireTime + std::chrono::milliseconds(timeout);
     maintainHeap();
     return id;
