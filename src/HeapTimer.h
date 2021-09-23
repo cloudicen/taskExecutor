@@ -10,6 +10,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "TaskSchedulerBase.h"
+
 class HeapTimer;
 
 class TimerNode {
@@ -31,12 +33,10 @@ public:
   }
 };
 
-class HeapTimer {
+class HeapTimer : protected TaskSchedulerBase {
 private:
   std::vector<const TimerNode *> timerHeap;
   std::unordered_map<int, std::unique_ptr<TimerNode>> nodeRegestry;
-  int currentNodeId = 0;
-  std::priority_queue<int> reusedId;
 
   void maintainHeap();
   void pushHeap(const TimerNode *node);
@@ -52,13 +52,7 @@ public:
       -> std::pair<int, std::future<decltype(f(args...))>> {
     auto taskPtr = std::make_shared<std::packaged_task<decltype(f(args...))()>>(
         std::bind(std::forward<F>(f), std::forward<Args>(args)...));
-    int id = 0;
-    if (this->reusedId.empty()) {
-      id = currentNodeId++;
-    } else {
-      id = this->reusedId.top();
-      this->reusedId.pop();
-    }
+    auto id = getNewTaskId();
     auto expireTime =
         std::chrono::system_clock::now() + std::chrono::milliseconds(timeout);
     auto [pt, success] = this->nodeRegestry.emplace(
@@ -79,6 +73,10 @@ public:
   int getNextTickInterval();
 
   int getTaskCount();
+
+  int try_excute() override;
+
+  int excute(int taskId) override;
 };
 
 #endif

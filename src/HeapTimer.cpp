@@ -58,8 +58,7 @@ int HeapTimer::remove(int id, bool doCall) {
 void HeapTimer::clear() {
   timerHeap.clear();
   nodeRegestry.clear();
-  currentNodeId = 0;
-  reusedId = std::priority_queue<int>();
+  resetTaskId();
 }
 
 void HeapTimer::tick() {
@@ -88,3 +87,33 @@ int HeapTimer::getNextTickInterval() {
 }
 
 int HeapTimer::getTaskCount() { return this->timerHeap.size(); }
+
+int HeapTimer::try_excute() {
+  while (!this->timerHeap.empty()) {
+    auto node = this->timerHeap.front();
+    if ((std::chrono::system_clock::now() - node->expireTime).count() < 0) {
+      return -1;
+    } else {
+      node->callBack();
+      popHeap();
+      this->nodeRegestry.erase(node->id);
+      return node->id;
+    }
+  }
+  return -1;
+}
+
+int HeapTimer::excute(int taskId) {
+  auto pt = this->nodeRegestry.find(taskId);
+  if (pt == this->nodeRegestry.end()) {
+    return -1;
+  }
+  for (auto i = 0; i < this->timerHeap.size(); i++) {
+    if (this->timerHeap[i]->id == taskId) {
+      this->timerHeap[i]->callBack();
+      break;
+    }
+  }
+  this->timerHeap.back()->callBack();
+  return taskId;
+}
