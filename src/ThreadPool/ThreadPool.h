@@ -10,36 +10,11 @@
 
 class ThreadPool {
 public:
-  explicit ThreadPool(size_t threadNum = 8) : stop_(false) {
-    for (size_t i = 0; i < threadNum; ++i) {
-      workers_.emplace_back([this]() {
-        for (;;) {
-          std::function<void()> task;
-          {
-            std::unique_lock<std::mutex> ul(mtx_);
-            cv_.wait(ul, [this]() { return stop_ || !tasks_.empty(); });
-            if (stop_ && tasks_.empty()) {
-              return;
-            }
-            task = std::move(tasks_.front());
-            tasks_.pop();
-          }
-          task();
-        }
-      });
-    }
-  }
+  explicit ThreadPool(size_t threadNum = 8);
 
-  ~ThreadPool() {
-    {
-      std::unique_lock<std::mutex> ul(mtx_);
-      stop_ = true;
-    }
-    cv_.notify_all();
-    for (auto &worker : workers_) {
-      worker.join();
-    }
-  }
+  ~ThreadPool();
+
+  void submit(std::function<void()> task);
 
   template <typename F, typename... Args>
   auto submit(F &&f, Args &&... args) -> std::future<decltype(f(args...))> {
@@ -62,6 +37,7 @@ private:
   std::queue<std::function<void()>> tasks_;
   std::mutex mtx_;
   std::condition_variable cv_;
+  static std::once_flag threadPoolConstruct;
 };
 
 #endif
