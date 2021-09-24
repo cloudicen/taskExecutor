@@ -1,7 +1,7 @@
 target("HeapTimer")
     set_kind("static")
     set_languages("cxx20")
-    add_files("src/*.cpp")
+    add_files("src/**/*.cpp")
 
 target("test")
     set_kind("binary")

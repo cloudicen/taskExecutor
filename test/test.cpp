@@ -1,4 +1,4 @@
-#include "../src/HeapTimer.h"
+#include "../src/TaskScheduler/TimedTaskScheduler.h"
 
 #include <iostream>
 #include <thread>
@@ -10,14 +10,14 @@ int callBack(int i, int *result) {
 }
 
 int main() {
-  HeapTimer timer;
+  TimedTaskScheduler timer;
   int i = 0;
   int result = 0;
-  auto a = timer.add(5000, callBack, i++, &result);
-  auto b = timer.add(14000, callBack, i++, &result);
-  auto c = timer.add(7000, callBack, i++, &result);
-  auto id = timer.add(10000, ::callBack, i++, &result);
-  timer.adjust(id.first, -1000);
+  auto a = timer.addTaskWithFuture(5000, callBack, i++, &result);
+  auto b = timer.addTaskWithFuture(14000, callBack, i++, &result);
+  auto c = timer.addTaskWithFuture(7000, callBack, i++, &result);
+  auto id = timer.addTaskWithFuture(10000, ::callBack, i++, &result);
+  timer.adjustTask(id.first, -1000);
 
   std::jthread t([&timer] {
     while (timer.getTaskCount() > 0) {

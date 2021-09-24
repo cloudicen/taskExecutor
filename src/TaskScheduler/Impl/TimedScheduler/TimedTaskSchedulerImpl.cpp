@@ -1,26 +1,39 @@
-#include "HeapTimer.h"
+#include "TimedTaskSchedulerImpl.h"
 
-void HeapTimer::maintainHeap() {
+void TimedTaskSchedulerImpl::maintainHeap() {
   std::make_heap(
       this->timerHeap.begin(), this->timerHeap.end(),
       [](const TimerNode *a, const TimerNode *b) { return (*a) > (*b); });
 }
 
-void HeapTimer::popHeap() {
+void TimedTaskSchedulerImpl::popHeap() {
   std::pop_heap(
       this->timerHeap.begin(), this->timerHeap.end(),
       [](const TimerNode *a, const TimerNode *b) { return (*a) > (*b); });
   this->timerHeap.pop_back();
 }
 
-void HeapTimer::pushHeap(const TimerNode *node) {
+void TimedTaskSchedulerImpl::pushHeap(const TimerNode *node) {
   this->timerHeap.push_back(node);
   std::push_heap(
       this->timerHeap.begin(), this->timerHeap.end(),
       [](const TimerNode *a, const TimerNode *b) { return (*a) > (*b); });
 }
 
-int HeapTimer::adjust(int id, int timeout) {
+int TimedTaskSchedulerImpl::addTask(std::function<void()> task,void* timeout_int) {
+    int timeout = *reinterpret_cast<int*>(timeout_int);
+    auto id = getNewTaskId();
+    auto expireTime =
+        std::chrono::system_clock::now() + std::chrono::milliseconds(timeout);
+    auto [pt, success] = this->nodeRegestry.emplace(
+        std::make_pair(id, std::make_unique<TimerNode>(
+                               id, expireTime, task)));
+    pushHeap(pt->second.get());
+    return id;
+}
+
+int TimedTaskSchedulerImpl::adjustTask(int id,void* timeout_int) {
+  int timeout = *reinterpret_cast<int*>(timeout_int);
   auto pt = this->nodeRegestry.find(id);
   if (pt == this->nodeRegestry.end()) {
     return -1;
@@ -32,7 +45,7 @@ int HeapTimer::adjust(int id, int timeout) {
   return id;
 }
 
-int HeapTimer::remove(int id, bool doCall) {
+int TimedTaskSchedulerImpl::removeTask(int id, bool doCall) {
   auto pt = this->nodeRegestry.find(id);
   if (pt == this->nodeRegestry.end()) {
     return -1;
@@ -55,13 +68,13 @@ int HeapTimer::remove(int id, bool doCall) {
   return id;
 }
 
-void HeapTimer::clear() {
+void TimedTaskSchedulerImpl::clearTask() {
   timerHeap.clear();
   nodeRegestry.clear();
   resetTaskId();
 }
 
-void HeapTimer::tick() {
+void TimedTaskSchedulerImpl::tick() {
   while (!this->timerHeap.empty()) {
     auto node = this->timerHeap.front();
     if ((std::chrono::system_clock::now() - node->expireTime).count() < 0) {
@@ -73,7 +86,7 @@ void HeapTimer::tick() {
   }
 }
 
-int HeapTimer::getNextTickInterval() {
+int TimedTaskSchedulerImpl::getNextTickInterval() {
   tick();
   int interval = 0;
   if (!this->timerHeap.empty()) {
@@ -86,9 +99,9 @@ int HeapTimer::getNextTickInterval() {
   return interval;
 }
 
-int HeapTimer::getTaskCount() { return this->timerHeap.size(); }
+int TimedTaskSchedulerImpl::getTaskCount() { return this->timerHeap.size(); }
 
-int HeapTimer::try_excute() {
+int TimedTaskSchedulerImpl::try_excute() {
   while (!this->timerHeap.empty()) {
     auto node = this->timerHeap.front();
     if ((std::chrono::system_clock::now() - node->expireTime).count() < 0) {
@@ -103,7 +116,7 @@ int HeapTimer::try_excute() {
   return -1;
 }
 
-int HeapTimer::excute(int taskId) {
+int TimedTaskSchedulerImpl::excute(int taskId) {
   auto pt = this->nodeRegestry.find(taskId);
   if (pt == this->nodeRegestry.end()) {
     return -1;

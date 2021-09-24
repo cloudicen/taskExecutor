@@ -6,7 +6,7 @@
 #include <memory>
 #include <queue>
 
-class TaskSchedulerBase {
+class TaskSchedulerImplBase {
 protected:
   int currentTaskId = 0;
   std::priority_queue<int> reusedId;
@@ -28,8 +28,18 @@ protected:
   }
 
 public:
-  TaskSchedulerBase() = default;
-  virtual ~TaskSchedulerBase() = default;
+  TaskSchedulerImplBase() = default;
+  virtual ~TaskSchedulerImplBase() = default;
+
+  virtual int addTask(std::function<void()>,void* options) = 0;
+
+  virtual int removeTask(int taskId,bool doCall) = 0;
+
+  virtual int adjustTask(int taskId,void* options) = 0;
+
+  virtual void clearTask() = 0;
+
+  virtual int getTaskCount() = 0;
 
   virtual int try_excute() = 0;
 
