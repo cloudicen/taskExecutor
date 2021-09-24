@@ -20,20 +20,20 @@ void TimedTaskSchedulerImpl::pushHeap(const TimerNode *node) {
       [](const TimerNode *a, const TimerNode *b) { return (*a) > (*b); });
 }
 
-int TimedTaskSchedulerImpl::addTask(std::function<void()> task,void* timeout_int) {
-    int timeout = *reinterpret_cast<int*>(timeout_int);
-    auto id = getNewTaskId();
-    auto expireTime =
-        std::chrono::system_clock::now() + std::chrono::milliseconds(timeout);
-    auto [pt, success] = this->nodeRegestry.emplace(
-        std::make_pair(id, std::make_unique<TimerNode>(
-                               id, expireTime, task)));
-    pushHeap(pt->second.get());
-    return id;
+int TimedTaskSchedulerImpl::addTask(std::function<void()> task,
+                                    void *timeout_int) {
+  int timeout = *reinterpret_cast<int *>(timeout_int);
+  auto id = getNewTaskId();
+  auto expireTime =
+      std::chrono::system_clock::now() + std::chrono::milliseconds(timeout);
+  auto [pt, success] = this->nodeRegestry.emplace(
+      std::make_pair(id, std::make_unique<TimerNode>(id, expireTime, task)));
+  pushHeap(pt->second.get());
+  return id;
 }
 
-int TimedTaskSchedulerImpl::adjustTask(int id,void* timeout_int) {
-  int timeout = *reinterpret_cast<int*>(timeout_int);
+int TimedTaskSchedulerImpl::adjustTask(int id, void *timeout_int) {
+  int timeout = *reinterpret_cast<int *>(timeout_int);
   auto pt = this->nodeRegestry.find(id);
   if (pt == this->nodeRegestry.end()) {
     return -1;
@@ -101,32 +101,22 @@ int TimedTaskSchedulerImpl::getNextTickInterval() {
 
 int TimedTaskSchedulerImpl::getTaskCount() { return this->timerHeap.size(); }
 
-int TimedTaskSchedulerImpl::try_excute() {
+std::pair<std::vector<std::function<void()>>,int> TimedTaskSchedulerImpl::getReadyTask() {
+  std::vector<std::function<void()>> taskList;
+  int interval = 0;
   while (!this->timerHeap.empty()) {
     auto node = this->timerHeap.front();
     if ((std::chrono::system_clock::now() - node->expireTime).count() < 0) {
-      return -1;
+      interval = std::chrono::duration_cast<std::chrono::milliseconds>(
+                     node->expireTime - std::chrono::system_clock::now())
+                     .count();
+      interval = interval < 0 ? 0 : interval;
+      break;
     } else {
-      node->callBack();
+      taskList.push_back(node->callBack);
       popHeap();
       this->nodeRegestry.erase(node->id);
-      return node->id;
     }
   }
-  return -1;
-}
-
-int TimedTaskSchedulerImpl::excute(int taskId) {
-  auto pt = this->nodeRegestry.find(taskId);
-  if (pt == this->nodeRegestry.end()) {
-    return -1;
-  }
-  for (auto i = 0; i < this->timerHeap.size(); i++) {
-    if (this->timerHeap[i]->id == taskId) {
-      this->timerHeap[i]->callBack();
-      break;
-    }
-  }
-  this->timerHeap.back()->callBack();
-  return taskId;
+  return {taskList,interval};
 }

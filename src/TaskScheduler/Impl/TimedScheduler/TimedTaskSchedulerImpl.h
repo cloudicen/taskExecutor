@@ -2,6 +2,7 @@
 #define __HEAP_TIMER_H__
 
 #include <chrono>
+#include <vector>
 #include <functional>
 #include <future>
 #include <map>
@@ -57,9 +58,7 @@ public:
 
   int getTaskCount() override;
 
-  int try_excute() override;
-
-  int excute(int taskId) override;
+  std::pair<std::vector<std::function<void()>>,int> getReadyTask() override;
 
   //method of timed task
 

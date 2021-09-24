@@ -41,9 +41,7 @@ public:
 
   virtual int getTaskCount() = 0;
 
-  virtual int try_excute() = 0;
-
-  virtual int excute(int taskId) = 0;
+  virtual std::pair<std::vector<std::function<void()>>,int> getReadyTask() = 0;
 };
 
 #endif
