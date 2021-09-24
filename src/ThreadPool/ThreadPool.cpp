@@ -2,35 +2,39 @@
 
 std::once_flag ThreadPool::threadPoolConstruct;
 
-ThreadPool::ThreadPool(size_t threadNum) : stop_(false) {
-  std::call_once(this->threadPoolConstruct, [&]() {
+ThreadPool* ThreadPool::getInstance(size_t threadNum) {
+  static ThreadPool* insPtr = new ThreadPool();
+  auto instance = insPtr;
+  std::call_once(ThreadPool::threadPoolConstruct, [instance,threadNum]() {
     for (size_t i = 0; i < threadNum; ++i) {
-      workers_.emplace_back([this]() {
+      instance->workers_.emplace_back([instance]() {
         for (;;) {
           std::function<void()> task;
           {
-            std::unique_lock<std::mutex> ul(mtx_);
-            cv_.wait(ul, [this]() { return stop_ || !tasks_.empty(); });
-            if (stop_ && tasks_.empty()) {
+            std::unique_lock<std::mutex> ul(instance->mtx_);
+            instance->cv_.wait(ul, [instance]() { return instance->stop_ || !instance->tasks_.empty(); });
+            if (instance->stop_ && instance->tasks_.empty()) {
               return;
             }
-            task = std::move(tasks_.front());
-            tasks_.pop();
+            task = std::move(instance->tasks_.front());
+            instance->tasks_.pop();
           }
           task();
         }
       });
     }
   });
+  return instance;
 }
 
-ThreadPool::~ThreadPool() {
+void ThreadPool::joinAll() {
+  auto instance = ThreadPool::getInstance();
   {
-    std::unique_lock<std::mutex> ul(mtx_);
-    stop_ = true;
+    std::unique_lock<std::mutex> ul(instance->mtx_);
+    instance->stop_ = true;
   }
-  cv_.notify_all();
-  for (auto &worker : workers_) {
+  instance->cv_.notify_all();
+  for (auto &worker : instance->workers_) {
     worker.join();
   }
 }

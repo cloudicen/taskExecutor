@@ -9,27 +9,14 @@
 #include <thread>
 
 class ThreadPool {
+private:
+  ThreadPool() : stop_(false){};
+
 public:
-  explicit ThreadPool(size_t threadNum = 8);
-
-  ~ThreadPool();
-
+  ~ThreadPool() { joinAll(); };
+  static ThreadPool *getInstance(size_t threadNum = 8);
+  static void joinAll();
   void submit(std::function<void()> task);
-
-  template <typename F, typename... Args>
-  auto submit(F &&f, Args &&... args) -> std::future<decltype(f(args...))> {
-    auto taskPtr = std::make_shared<std::packaged_task<decltype(f(args...))()>>(
-        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
-    {
-      std::unique_lock<std::mutex> ul(mtx_);
-      if (stop_) {
-        throw std::runtime_error("submit on stopped ThreadPool");
-      }
-      tasks_.emplace([taskPtr]() { (*taskPtr)(); });
-    }
-    cv_.notify_one();
-    return taskPtr->get_future();
-  }
 
 private:
   bool stop_;

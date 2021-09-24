@@ -1,4 +1,5 @@
 #include "../src/TaskScheduler/TimedTaskScheduler.h"
+#include "../src/ThreadPool/ThreadPool.h"
 
 #include <iostream>
 #include <thread>
@@ -19,16 +20,15 @@ int main() {
   auto id = timer.addTaskWithFuture(10000, ::callBack, i++, &result);
   timer.adjustTask(id.first, -1000);
 
-  std::jthread t([&timer] {
+  auto pool = ThreadPool::getInstance();
+  pool->submit([&timer]() {
     while (timer.getTaskCount() > 0) {
       timer.getNextTickInterval();
       // std::cout << "next task timeout: " << timer.getNextTickInterval() <<
       // std::endl;
-    }
-  });
-  std::cout << id.second.get() << std::endl;
-  std::cout << a.second.get() << std::endl;
-  if (t.joinable()) {
-    t.join();
-  }
+    }});
+
+  pool->joinAll();
+  //std::cout << id.second.get() << std::endl;
+  //std::cout << a.second.get() << std::endl;
 }
