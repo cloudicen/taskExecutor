@@ -1,16 +1,16 @@
-#ifndef __TIMED_TASK_SCHEDULER__
-#define __TIMED_TASK_SCHEDULER__
+#ifndef __TIMED_TASK_SCHEDULER_PROXY_H__
+#define __TIMED_TASK_SCHEDULER_PROXY_H__
 
-#include "Impl/TimedScheduler/TimedTaskSchedulerImpl.h"
+#include "impl/TimedTaskScheduler.h"
 #include <memory>
 
-class TimedTaskScheduler {
+class TimedTaskSchedulerProxy {
 private:
-  std::unique_ptr<TimedTaskSchedulerImpl> timedSchedulerBase;
+  std::unique_ptr<TimedTaskScheduler> timedSchedulerBase;
 
 public:
-  TimedTaskScheduler() : timedSchedulerBase(new TimedTaskSchedulerImpl()){};
-  ~TimedTaskScheduler() = default;
+  TimedTaskSchedulerProxy() : timedSchedulerBase(new TimedTaskScheduler()){};
+  ~TimedTaskSchedulerProxy() = default;
 
   int addTask(std::function<void()> task, int timeout) {
     return timedSchedulerBase->addTask(task, &timeout);
@@ -32,7 +32,7 @@ public:
     return timedSchedulerBase->getReadyTask();
   }
 
-  TaskSchedulerImplBase *getSchedulerBase() { return timedSchedulerBase.get(); }
+  TaskSchedulerBase *getSchedulerBase() { return timedSchedulerBase.get(); }
 };
 
 #endif

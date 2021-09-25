@@ -1,12 +1,12 @@
-#ifndef __TASK_SCHEDULER_BASE__
-#define __TASK_SCHEDULER_BASE__
+#ifndef __TASK_SCHEDULER_BASE_H__
+#define __TASK_SCHEDULER_BASE_H__
 
 #include <functional>
 #include <future>
 #include <memory>
 #include <queue>
 
-class TaskSchedulerImplBase {
+class TaskSchedulerBase {
 protected:
   int currentTaskId = 0;
   std::priority_queue<int> reusedId;
@@ -28,20 +28,20 @@ protected:
   }
 
 public:
-  TaskSchedulerImplBase() = default;
-  virtual ~TaskSchedulerImplBase() = default;
+  TaskSchedulerBase() = default;
+  virtual ~TaskSchedulerBase() = default;
 
-  virtual int addTask(std::function<void()>,void* options) = 0;
+  virtual int addTask(std::function<void()>, void *options) = 0;
 
-  virtual int removeTask(int taskId,bool doCall) = 0;
+  virtual int removeTask(int taskId, bool doCall) = 0;
 
-  virtual int adjustTask(int taskId,void* options) = 0;
+  virtual int adjustTask(int taskId, void *options) = 0;
 
   virtual void clearTask() = 0;
 
   virtual int getTaskCount() = 0;
 
-  virtual std::pair<std::vector<std::function<void()>>,int> getReadyTask() = 0;
+  virtual std::pair<std::vector<std::function<void()>>, int> getReadyTask() = 0;
 };
 
 #endif

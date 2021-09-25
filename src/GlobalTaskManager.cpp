@@ -1,9 +1,8 @@
-#include "TaskExcutor.h"
-#include "iostream"
+#include "GlobalTaskManager.h"
 
-std::once_flag TaskExcutor::constructFlag;
+std::once_flag GlobalTaskManager::constructFlag;
 
-void TaskExcutor::polling() {
+void GlobalTaskManager::polling() {
   using namespace std::chrono_literals;
   while (true) {
     {
@@ -43,7 +42,7 @@ void TaskExcutor::polling() {
   }
 }
 
-void TaskExcutor::addScheduler(TaskSchedulerImplBase *schedulerPtr) {
+void GlobalTaskManager::addScheduler(TaskSchedulerBase *schedulerPtr) {
   {
     std::unique_lock<std::mutex> ul(this->mtx_);
     this->schedulerWaitingList.remove(schedulerPtr);
@@ -59,13 +58,13 @@ void TaskExcutor::addScheduler(TaskSchedulerImplBase *schedulerPtr) {
   this->cv_.notify_one();
 }
 
-void TaskExcutor::removeScheduler(TaskSchedulerImplBase *schedulerPtr) {
+void GlobalTaskManager::removeScheduler(TaskSchedulerBase *schedulerPtr) {
   std::unique_lock<std::mutex> ul(this->mtx_);
   this->schedulerWaitingList.remove(schedulerPtr);
   this->schedulerPolingList.remove(schedulerPtr);
 }
 
-void TaskExcutor::schedulerOnNewTask(TaskSchedulerImplBase *schedulerPtr) {
+void GlobalTaskManager::schedulerOnNewTask(TaskSchedulerBase *schedulerPtr) {
   {
     std::unique_lock<std::mutex> ul(this->mtx_);
     this->schedulerWaitingList.remove(schedulerPtr);

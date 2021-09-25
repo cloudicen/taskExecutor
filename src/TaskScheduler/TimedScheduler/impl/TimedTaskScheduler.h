@@ -1,5 +1,5 @@
-#ifndef __HEAP_TIMER_H__
-#define __HEAP_TIMER_H__
+#ifndef __TIMED_TASK_SCHEDULER_H__
+#define __TIMED_TASK_SCHEDULER_H__
 
 #include <chrono>
 #include <functional>
@@ -11,16 +11,16 @@
 #include <unordered_set>
 #include <vector>
 
-#include "../TaskSchedulerImplBase.h"
+#include "../../TaskSchedulerBase.h"
 
-class TimedTaskSchedulerImpl;
+class TimedTaskScheduler;
 
 class TimerNode {
 private:
   int id;
   std::chrono::time_point<std::chrono::system_clock> expireTime;
   std::function<void()> callBack;
-  friend TimedTaskSchedulerImpl;
+  friend TimedTaskScheduler;
 
 public:
   explicit TimerNode(
@@ -34,7 +34,7 @@ public:
   }
 };
 
-class TimedTaskSchedulerImpl : public TaskSchedulerImplBase {
+class TimedTaskScheduler : public TaskSchedulerBase {
 private:
   std::vector<const TimerNode *> timerHeap;
   std::unordered_map<int, std::unique_ptr<TimerNode>> nodeRegestry;
@@ -44,9 +44,9 @@ private:
   void popHeap();
 
 public:
-  TimedTaskSchedulerImpl() = default;
-  ~TimedTaskSchedulerImpl() = default;
-  TimedTaskSchedulerImpl(const TimedTaskSchedulerImpl &) = delete;
+  TimedTaskScheduler() = default;
+  ~TimedTaskScheduler() = default;
+  TimedTaskScheduler(const TimedTaskScheduler &) = delete;
 
   int addTask(std::function<void()> Task, void *timeout_int) override;
 

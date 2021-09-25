@@ -1,7 +1,7 @@
-#ifndef __TASK_EXCUTOR__
-#define __TASK_EXCUTOR__
+#ifndef __GLOBAL_TASK_MANAGER_H__
+#define __GLOBAL_TASK_MANAGER_H__
 
-#include "TaskScheduler/Impl/TaskSchedulerImplBase.h"
+#include "TaskScheduler/TaskSchedulerBase.h"
 #include "ThreadPool/ThreadPool.h"
 
 #include <chrono>
@@ -13,11 +13,11 @@
 #include <queue>
 #include <thread>
 
-class TaskExcutor {
+class GlobalTaskManager {
 private:
   ThreadPool *pool;
-  std::list<TaskSchedulerImplBase *> schedulerPolingList;
-  std::list<TaskSchedulerImplBase *> schedulerWaitingList;
+  std::list<TaskSchedulerBase *> schedulerPolingList;
+  std::list<TaskSchedulerBase *> schedulerWaitingList;
 
   std::thread *schedulerThread;
   bool stop = false;
@@ -29,24 +29,24 @@ private:
 
   int minPollingInterval = 0;
 
-  TaskExcutor() : pool(ThreadPool::getInstance()){};
+  GlobalTaskManager() : pool(ThreadPool::getInstance()){};
   void polling();
 
 public:
-  static TaskExcutor *getInstance() {
-    static TaskExcutor *insPtr = new TaskExcutor();
+  static GlobalTaskManager *getInstance() {
+    static GlobalTaskManager *insPtr = new GlobalTaskManager();
     auto instance = insPtr;
-    std::call_once(TaskExcutor::constructFlag, [instance]() {
+    std::call_once(GlobalTaskManager::constructFlag, [instance]() {
       instance->schedulerThread =
           new std::thread([instance]() { instance->polling(); });
     });
     return instance;
   }
 
-  ~TaskExcutor(){};
+  ~GlobalTaskManager(){};
 
   static void stopExcutor() {
-    auto instance = TaskExcutor::getInstance();
+    auto instance = GlobalTaskManager::getInstance();
     {
       std::unique_lock<std::mutex> ul(instance->mtx_);
       instance->stop = true;
@@ -55,11 +55,11 @@ public:
     instance->schedulerThread->join();
   }
 
-  void addScheduler(TaskSchedulerImplBase *);
+  void addScheduler(TaskSchedulerBase *);
 
-  void removeScheduler(TaskSchedulerImplBase *);
+  void removeScheduler(TaskSchedulerBase *);
 
-  void schedulerOnNewTask(TaskSchedulerImplBase *);
+  void schedulerOnNewTask(TaskSchedulerBase *);
 };
 
 #endif

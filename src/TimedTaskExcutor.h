@@ -1,8 +1,8 @@
-#ifndef __TIMED_TASK_EXCUTOR__
-#define __TIMED_TASK_EXCUTOR__
+#ifndef __TIMED_TASK_EXCUTOR_H__
+#define __TIMED_TASK_EXCUTOR_H__
 
-#include "TaskExcutor.h"
-#include "TaskScheduler/TimedTaskScheduler.h"
+#include "GlobalTaskManager.h"
+#include "TaskScheduler/TimedScheduler/TimedTaskSchedulerProxy.h"
 #include "ThreadPool/ThreadPool.h"
 
 #include <condition_variable>
@@ -15,14 +15,14 @@
 
 class TimedTaskExcutor {
 private:
-  TaskExcutor *excutor;
-  std::unique_ptr<TimedTaskScheduler> scheduler;
+  GlobalTaskManager *excutor;
+  std::unique_ptr<TimedTaskSchedulerProxy> scheduler;
   std::thread schedulerThread;
 
 public:
   TimedTaskExcutor()
-      : excutor(TaskExcutor::getInstance()),
-        scheduler(new TimedTaskScheduler()) {
+      : excutor(GlobalTaskManager::getInstance()),
+        scheduler(new TimedTaskSchedulerProxy()) {
     excutor->addScheduler(this->scheduler->getSchedulerBase());
   };
   ~TimedTaskExcutor() {

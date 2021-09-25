@@ -1,27 +1,26 @@
-#include "TimedTaskSchedulerImpl.h"
+#include "TimedTaskScheduler.h"
 
-void TimedTaskSchedulerImpl::maintainHeap() {
+void TimedTaskScheduler::maintainHeap() {
   std::make_heap(
       this->timerHeap.begin(), this->timerHeap.end(),
       [](const TimerNode *a, const TimerNode *b) { return (*a) > (*b); });
 }
 
-void TimedTaskSchedulerImpl::popHeap() {
+void TimedTaskScheduler::popHeap() {
   std::pop_heap(
       this->timerHeap.begin(), this->timerHeap.end(),
       [](const TimerNode *a, const TimerNode *b) { return (*a) > (*b); });
   this->timerHeap.pop_back();
 }
 
-void TimedTaskSchedulerImpl::pushHeap(const TimerNode *node) {
+void TimedTaskScheduler::pushHeap(const TimerNode *node) {
   this->timerHeap.push_back(node);
   std::push_heap(
       this->timerHeap.begin(), this->timerHeap.end(),
       [](const TimerNode *a, const TimerNode *b) { return (*a) > (*b); });
 }
 
-int TimedTaskSchedulerImpl::addTask(std::function<void()> task,
-                                    void *timeout_int) {
+int TimedTaskScheduler::addTask(std::function<void()> task, void *timeout_int) {
   int timeout = *reinterpret_cast<int *>(timeout_int);
   auto id = getNewTaskId();
   auto expireTime =
@@ -32,7 +31,7 @@ int TimedTaskSchedulerImpl::addTask(std::function<void()> task,
   return id;
 }
 
-int TimedTaskSchedulerImpl::adjustTask(int id, void *timeout_int) {
+int TimedTaskScheduler::adjustTask(int id, void *timeout_int) {
   int timeout = *reinterpret_cast<int *>(timeout_int);
   auto pt = this->nodeRegestry.find(id);
   if (pt == this->nodeRegestry.end()) {
@@ -45,7 +44,7 @@ int TimedTaskSchedulerImpl::adjustTask(int id, void *timeout_int) {
   return id;
 }
 
-int TimedTaskSchedulerImpl::removeTask(int id, bool doCall) {
+int TimedTaskScheduler::removeTask(int id, bool doCall) {
   auto pt = this->nodeRegestry.find(id);
   if (pt == this->nodeRegestry.end()) {
     return -1;
@@ -68,16 +67,16 @@ int TimedTaskSchedulerImpl::removeTask(int id, bool doCall) {
   return id;
 }
 
-void TimedTaskSchedulerImpl::clearTask() {
+void TimedTaskScheduler::clearTask() {
   timerHeap.clear();
   nodeRegestry.clear();
   resetTaskId();
 }
 
-int TimedTaskSchedulerImpl::getTaskCount() { return this->timerHeap.size(); }
+int TimedTaskScheduler::getTaskCount() { return this->timerHeap.size(); }
 
 std::pair<std::vector<std::function<void()>>, int>
-TimedTaskSchedulerImpl::getReadyTask() {
+TimedTaskScheduler::getReadyTask() {
   std::vector<std::function<void()>> taskList;
   int interval = 0;
   while (!this->timerHeap.empty()) {
