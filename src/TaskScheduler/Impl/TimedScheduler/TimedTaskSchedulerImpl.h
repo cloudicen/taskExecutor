@@ -2,7 +2,6 @@
 #define __HEAP_TIMER_H__
 
 #include <chrono>
-#include <vector>
 #include <functional>
 #include <future>
 #include <map>
@@ -10,6 +9,7 @@
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "../TaskSchedulerImplBase.h"
 
@@ -34,7 +34,7 @@ public:
   }
 };
 
-class TimedTaskSchedulerImpl : protected TaskSchedulerImplBase {
+class TimedTaskSchedulerImpl : public TaskSchedulerImplBase {
 private:
   std::vector<const TimerNode *> timerHeap;
   std::unordered_map<int, std::unique_ptr<TimerNode>> nodeRegestry;
@@ -48,9 +48,9 @@ public:
   ~TimedTaskSchedulerImpl() = default;
   TimedTaskSchedulerImpl(const TimedTaskSchedulerImpl &) = delete;
 
-  int addTask(std::function<void()> Task,void* timeout_int) override;
+  int addTask(std::function<void()> Task, void *timeout_int) override;
 
-  int adjustTask(int id, void* timeout_int) override;
+  int adjustTask(int id, void *timeout_int) override;
 
   int removeTask(int id, bool doCall) override;
 
@@ -58,14 +58,7 @@ public:
 
   int getTaskCount() override;
 
-  std::pair<std::vector<std::function<void()>>,int> getReadyTask() override;
-
-  //method of timed task
-
-  void tick();
-  
-
-  int getNextTickInterval();
+  std::pair<std::vector<std::function<void()>>, int> getReadyTask() override;
 };
 
 #endif

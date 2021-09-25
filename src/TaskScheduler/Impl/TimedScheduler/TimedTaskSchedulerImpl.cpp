@@ -74,34 +74,10 @@ void TimedTaskSchedulerImpl::clearTask() {
   resetTaskId();
 }
 
-void TimedTaskSchedulerImpl::tick() {
-  while (!this->timerHeap.empty()) {
-    auto node = this->timerHeap.front();
-    if ((std::chrono::system_clock::now() - node->expireTime).count() < 0) {
-      break;
-    }
-    node->callBack();
-    popHeap();
-    this->nodeRegestry.erase(node->id);
-  }
-}
-
-int TimedTaskSchedulerImpl::getNextTickInterval() {
-  tick();
-  int interval = 0;
-  if (!this->timerHeap.empty()) {
-    interval = std::chrono::duration_cast<std::chrono::milliseconds>(
-                   this->timerHeap.front()->expireTime -
-                   std::chrono::system_clock::now())
-                   .count();
-    interval = interval < 0 ? 0 : interval;
-  }
-  return interval;
-}
-
 int TimedTaskSchedulerImpl::getTaskCount() { return this->timerHeap.size(); }
 
-std::pair<std::vector<std::function<void()>>,int> TimedTaskSchedulerImpl::getReadyTask() {
+std::pair<std::vector<std::function<void()>>, int>
+TimedTaskSchedulerImpl::getReadyTask() {
   std::vector<std::function<void()>> taskList;
   int interval = 0;
   while (!this->timerHeap.empty()) {
@@ -118,5 +94,5 @@ std::pair<std::vector<std::function<void()>>,int> TimedTaskSchedulerImpl::getRea
       this->nodeRegestry.erase(node->id);
     }
   }
-  return {taskList,interval};
+  return {taskList, interval};
 }
