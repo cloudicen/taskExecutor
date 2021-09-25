@@ -12,7 +12,6 @@ int callBack(int i, int *result) {
 int main() {
   TimedTaskExcutor excutor;
 
-  // TimedTaskScheduler timer;
   int i = 0;
   int result = 0;
   auto a = excutor.addTaskWithFuture(5000, callBack, i++, &result);
@@ -27,4 +26,6 @@ int main() {
 
   GlobalTaskManager::stopExcutor();
   ThreadPool::joinAll();
+
+  std::cout << result << std::endl;
 }
