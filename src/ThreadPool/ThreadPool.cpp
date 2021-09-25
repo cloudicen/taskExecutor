@@ -2,17 +2,19 @@
 
 std::once_flag ThreadPool::threadPoolConstruct;
 
-ThreadPool* ThreadPool::getInstance(size_t threadNum) {
-  static ThreadPool* insPtr = new ThreadPool();
+ThreadPool *ThreadPool::getInstance(size_t threadNum) {
+  static ThreadPool *insPtr = new ThreadPool();
   auto instance = insPtr;
-  std::call_once(ThreadPool::threadPoolConstruct, [instance,threadNum]() {
+  std::call_once(ThreadPool::threadPoolConstruct, [instance, threadNum]() {
     for (size_t i = 0; i < threadNum; ++i) {
       instance->workers_.emplace_back([instance]() {
         for (;;) {
           std::function<void()> task;
           {
             std::unique_lock<std::mutex> ul(instance->mtx_);
-            instance->cv_.wait(ul, [instance]() { return instance->stop_ || !instance->tasks_.empty(); });
+            instance->cv_.wait(ul, [instance]() {
+              return instance->stop_ || !instance->tasks_.empty();
+            });
             if (instance->stop_ && instance->tasks_.empty()) {
               return;
             }
