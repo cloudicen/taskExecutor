@@ -16,6 +16,7 @@
 class GlobalTaskManager {
 private:
   ThreadPool *pool;
+  static GlobalTaskManager *instance;
   std::list<TaskSchedulerBase *> schedulerPolingList;
   std::list<TaskSchedulerBase *> schedulerWaitingList;
 
@@ -33,26 +34,17 @@ private:
   void polling();
 
 public:
-  static GlobalTaskManager *getInstance() {
-    static GlobalTaskManager *insPtr = new GlobalTaskManager();
-    auto instance = insPtr;
-    std::call_once(GlobalTaskManager::constructFlag, [instance]() {
-      instance->schedulerThread =
-          new std::thread([instance]() { instance->polling(); });
-    });
-    return instance;
-  }
+  static GlobalTaskManager *getInstance();
 
-  ~GlobalTaskManager(){};
+  ~GlobalTaskManager() { stopExcutor(); };
 
-  static void stopExcutor() {
-    auto instance = GlobalTaskManager::getInstance();
+  void stopExcutor() {
     {
-      std::unique_lock<std::mutex> ul(instance->mtx_);
-      instance->stop = true;
+      std::unique_lock<std::mutex> ul(this->mtx_);
+      this->stop = true;
     }
-    instance->cv_.notify_all();
-    instance->schedulerThread->join();
+    this->cv_.notify_all();
+    this->schedulerThread->join();
   }
 
   void addScheduler(TaskSchedulerBase *);
@@ -60,6 +52,20 @@ public:
   void removeScheduler(TaskSchedulerBase *);
 
   void schedulerOnNewTask(TaskSchedulerBase *);
+
+private:
+  class Garbo //设置为私有防止外界访问
+  {
+  public:
+    ~Garbo() //实际去析构new的单例对象
+    {
+      if (GlobalTaskManager::instance != NULL) {
+        delete GlobalTaskManager::instance;
+        GlobalTaskManager::instance = nullptr;
+      }
+    }
+  };
+  static Garbo garbo;
 };
 
 #endif

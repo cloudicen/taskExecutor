@@ -23,9 +23,6 @@ int main() {
   std::cout << a.second.get() << std::endl;
 
   auto pp = excutor.addTaskWithFuture(5000, callBack, i++, &result);
-
-  GlobalTaskManager::stopExcutor();
-  ThreadPool::joinAll();
-
+  GlobalTaskManager::getInstance()->stopExcutor();
   std::cout << result << std::endl;
 }

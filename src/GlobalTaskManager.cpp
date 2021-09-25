@@ -2,6 +2,20 @@
 
 std::once_flag GlobalTaskManager::constructFlag;
 
+GlobalTaskManager *GlobalTaskManager::instance;
+
+GlobalTaskManager *GlobalTaskManager::getInstance() {
+  if (instance != nullptr) {
+    return instance;
+  }
+  std::call_once(GlobalTaskManager::constructFlag, []() {
+    GlobalTaskManager::instance = new GlobalTaskManager();
+    GlobalTaskManager::instance->schedulerThread =
+        new std::thread([]() { GlobalTaskManager::instance->polling(); });
+  });
+  return instance;
+}
+
 void GlobalTaskManager::polling() {
   using namespace std::chrono_literals;
   while (true) {
