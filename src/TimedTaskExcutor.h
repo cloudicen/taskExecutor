@@ -40,10 +40,6 @@ public:
     return id;
   }
 
-   int addTask(std::function<void()> task, int timeout) {
-    return scheduler->addTask(task, timeout);
-  }
-
   int adjustTask(int id, int timeout) {
     return scheduler->adjustTask(id,timeout);
   }
