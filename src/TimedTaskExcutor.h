@@ -44,7 +44,6 @@ public:
 
 private:
   std::unique_ptr<TimedTaskSchedulerProxy> scheduler;
-  std::thread schedulerThread;
 };
 
 #endif
