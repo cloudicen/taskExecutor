@@ -31,11 +31,12 @@ public:
   TaskSchedulerBase() = default;
   virtual ~TaskSchedulerBase() = default;
 
-  virtual int addTask(std::function<void()>, void *options) = 0;
+  virtual int addTask(std::function<void()>,
+                      std::initializer_list<void *> options) = 0;
 
   virtual int removeTask(int taskId, bool doCall) = 0;
 
-  virtual int adjustTask(int taskId, void *options) = 0;
+  virtual int adjustTask(int taskId, std::initializer_list<void *> options) = 0;
 
   virtual void clearTask() = 0;
 

@@ -13,11 +13,11 @@ public:
   ~TimedTaskSchedulerProxy() = default;
 
   int addTask(std::function<void()> task, int timeout) {
-    return timedSchedulerBase->addTask(task, &timeout);
+    return timedSchedulerBase->addTask(task, {&timeout});
   }
 
   int adjustTask(int id, int timeout) {
-    return timedSchedulerBase->adjustTask(id, &timeout);
+    return timedSchedulerBase->adjustTask(id, {&timeout});
   }
 
   int removeTask(int id, bool doCall) {

@@ -4,10 +4,10 @@
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <shared_mutex>
 #include <unordered_map>
 #include <vector>
-#include <shared_mutex>
-#include <mutex>
 
 #include "../../TaskSchedulerBase.h"
 
@@ -43,9 +43,10 @@ public:
   ~TimedTaskScheduler() = default;
   TimedTaskScheduler(const TimedTaskScheduler &) = delete;
 
-  int addTask(std::function<void()> Task, void *timeout_int) override;
+  int addTask(std::function<void()> Task,
+              std::initializer_list<void *> options) override;
 
-  int adjustTask(int id, void *timeout_int) override;
+  int adjustTask(int id, std::initializer_list<void *> options) override;
 
   int removeTask(int id, bool doCall) override;
 
