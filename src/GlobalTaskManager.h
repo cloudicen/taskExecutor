@@ -8,6 +8,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
+#include <queue>
 #include <set>
 #include <thread>
 
@@ -44,6 +45,20 @@ private:
 
 private:
   static GlobalTaskManager *instance;
+
+private:
+  class Garbo //设置为私有防止外界访问
+  {
+  public:
+    ~Garbo() //实际去析构new的单例对象
+    {
+      if (GlobalTaskManager::instance != NULL) {
+        delete GlobalTaskManager::instance;
+        GlobalTaskManager::instance = nullptr;
+      }
+    }
+  };
+  static Garbo garbo;
 };
 
 #endif

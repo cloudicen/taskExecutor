@@ -1,39 +1,40 @@
 #include "ThreadPool.h"
 
 std::once_flag ThreadPool::threadPoolConstruct;
-
-ThreadPool* ThreadPool::instance;
+ThreadPool *ThreadPool::instance;
 
 ThreadPool *ThreadPool::getInstance(size_t threadNum) {
-  if(instance != nullptr){
-    return instance;
+  if (ThreadPool::instance != nullptr) {
+    return ThreadPool::instance;
   }
   std::call_once(ThreadPool::threadPoolConstruct, [threadNum]() {
+    ThreadPool::instance = new ThreadPool();
     for (size_t i = 0; i < threadNum; ++i) {
-      instance->workers_.emplace_back([]() {
+      ThreadPool::instance->workers_.emplace_back([]() {
         for (;;) {
           std::function<void()> task;
           {
-            std::unique_lock<std::mutex> ul(instance->mtx_);
-            instance->cv_.wait(ul, []() {
-              return instance->stop_ || !instance->tasks_.empty();
+            std::unique_lock<std::mutex> ul(ThreadPool::instance->mtx_);
+            ThreadPool::instance->cv_.wait(ul, []() {
+              return ThreadPool::instance->stop_ ||
+                     !ThreadPool::instance->tasks_.empty();
             });
-            if (instance->stop_ && instance->tasks_.empty()) {
+            if (ThreadPool::instance->stop_ &&
+                ThreadPool::instance->tasks_.empty()) {
               return;
             }
-            task = std::move(instance->tasks_.front());
-            instance->tasks_.pop();
+            task = std::move(ThreadPool::instance->tasks_.front());
+            ThreadPool::instance->tasks_.pop();
           }
           task();
         }
       });
     }
   });
-  return instance;
+  return ThreadPool::instance;
 }
 
 void ThreadPool::joinAll() {
-  auto instance = ThreadPool::getInstance();
   {
     std::unique_lock<std::mutex> ul(instance->mtx_);
     instance->stop_ = true;

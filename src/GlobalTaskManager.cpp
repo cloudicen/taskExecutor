@@ -43,10 +43,10 @@ void GlobalTaskManager::polling() {
       this->pollingInterval = INT32_MAX;
 
       for (auto schedulerIt = this->schedulerPolingList.begin();
-           schedulerIt != this->schedulerPolingList.end(); schedulerIt++) {
+           schedulerIt != this->schedulerPolingList.end();) {
         //若调度器内无事件，则移入等待队列。调度器添加事件时需要唤醒
         if ((*schedulerIt)->getTaskCount() == 0) {
-          auto scherdulerToMove = schedulerWaitingList.extract(schedulerIt++);
+          auto scherdulerToMove = schedulerPolingList.extract(schedulerIt++);
           schedulerWaitingList.insert(std::move(scherdulerToMove));
           continue;
         }
@@ -58,6 +58,7 @@ void GlobalTaskManager::polling() {
         }
         //更新轮询等待时间，为所有调度器返回的最小值。
         pollingInterval = std::min(pollingInterval, interval);
+        schedulerIt++;
       }
     }
   }
@@ -68,12 +69,12 @@ void GlobalTaskManager::addScheduler(TaskSchedulerBase *schedulerPtr) {
   auto instance = GlobalTaskManager::getInstance();
   {
     std::unique_lock<std::mutex> ul(instance->mtx_);
-    auto count = instance->schedulerWaitingList.count(schedulerPtr);
-    if (count > 0) {
+    auto node = instance->schedulerWaitingList.extract(schedulerPtr);
+    if (!node.empty()) {
       return;
-    } else {
-      instance->schedulerPolingList.insert(schedulerPtr);
     }
+    instance->schedulerPolingList.insert(std::move(schedulerPtr));
+    // 新任务调度器加入，需要立即查询任务就绪列表，将等待超时时长置0
     instance->pollingInterval = 0;
   }
   instance->cv_.notify_one();
@@ -92,11 +93,13 @@ void GlobalTaskManager::schedulerOnNewTask(TaskSchedulerBase *schedulerPtr) {
   auto instance = GlobalTaskManager::getInstance();
   {
     std::unique_lock<std::mutex> ul(instance->mtx_);
-    auto scheduler = instance->schedulerWaitingList.extract(schedulerPtr);
-    if (!scheduler.empty()) {
-      instance->schedulerPolingList.insert(std::move(scheduler));
+    auto node = instance->schedulerWaitingList.extract(schedulerPtr);
+    if (!node.empty()) {
+      instance->schedulerPolingList.insert(std::move(node));
     } else {
-      instance->schedulerPolingList.insert(schedulerPtr);
+      if (instance->schedulerPolingList.count(schedulerPtr) == 0) {
+        return;
+      }
     }
     // 新任务加入，需要立即查询任务就绪列表，将等待超时时长置0
     instance->pollingInterval = 0;

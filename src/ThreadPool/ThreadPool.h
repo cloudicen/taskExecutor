@@ -1,12 +1,12 @@
 #ifndef __THREAD_POOL_H__
 #define __THREAD_POOL_H__
 
+#include <cassert>
 #include <condition_variable>
 #include <functional>
 #include <future>
 #include <mutex>
 #include <queue>
-#include <cassert>
 #include <thread>
 
 class ThreadPool {
@@ -29,6 +29,20 @@ private:
 
 private:
   static ThreadPool *instance;
+
+private:
+  class Garbo //设置为私有防止外界访问
+  {
+  public:
+    ~Garbo() //实际去析构new的单例对象
+    {
+      if (ThreadPool::instance != NULL) {
+        delete ThreadPool::instance;
+        ThreadPool::instance = nullptr;
+      }
+    }
+  };
+  static Garbo garbo;
 };
 
 #endif
