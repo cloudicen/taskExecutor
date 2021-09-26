@@ -24,6 +24,6 @@ int main() {
   std::cout << id.second.get() << std::endl;
   std::cout << a.second.get() << std::endl;
   auto pp = excutor->addTaskWithFuture(5000, callBack, i++, &result);
-  GlobalTaskManager::stopExcutor();
+  GlobalTaskManager::stopService();
   std::cout << result << std::endl;
 }

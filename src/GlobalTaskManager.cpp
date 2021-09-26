@@ -14,7 +14,7 @@ GlobalTaskManager *GlobalTaskManager::getInstance() {
   return instance;
 }
 
-void GlobalTaskManager::stopExcutor() {
+void GlobalTaskManager::stopService() {
   assert(instance != nullptr);
   {
     std::unique_lock<std::mutex> ul(instance->mtx_);

@@ -19,9 +19,9 @@ private:
 public:
   static GlobalTaskManager *getInstance();
 
-  ~GlobalTaskManager() { stopExcutor(); };
+  ~GlobalTaskManager() { stopService(); };
 
-  static void stopExcutor();
+  static void stopService();
 
   static void addScheduler(TaskSchedulerBase *);
 
