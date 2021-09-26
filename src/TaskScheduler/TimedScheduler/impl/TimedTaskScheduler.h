@@ -3,44 +3,39 @@
 
 #include <chrono>
 #include <functional>
-#include <future>
-#include <map>
 #include <memory>
-#include <queue>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
+#include <shared_mutex>
+#include <mutex>
 
 #include "../../TaskSchedulerBase.h"
 
 class TimedTaskScheduler;
 
-class TimerNode {
+class TimedTaskNode {
+public:
+  explicit TimedTaskNode(
+      int _id, std::chrono::time_point<std::chrono::system_clock> _expireTime,
+      std::function<void()> _callBack)
+      : id(_id), expireTime(_expireTime), callBack(_callBack){};
+  ~TimedTaskNode() = default;
+
+  bool operator>(const TimedTaskNode &other) const {
+    return this->expireTime > other.expireTime;
+  }
+
 private:
   int id;
   std::chrono::time_point<std::chrono::system_clock> expireTime;
   std::function<void()> callBack;
   friend TimedTaskScheduler;
-
-public:
-  explicit TimerNode(
-      int _id, std::chrono::time_point<std::chrono::system_clock> _expireTime,
-      std::function<void()> _callBack)
-      : id(_id), expireTime(_expireTime), callBack(_callBack){};
-  ~TimerNode() = default;
-
-  bool operator>(const TimerNode &other) const {
-    return this->expireTime > other.expireTime;
-  }
 };
 
 class TimedTaskScheduler : public TaskSchedulerBase {
 private:
-  std::vector<const TimerNode *> timerHeap;
-  std::unordered_map<int, std::unique_ptr<TimerNode>> nodeRegestry;
-
   void maintainHeap();
-  void pushHeap(const TimerNode *node);
+  void pushHeap(const TimedTaskNode *node);
   void popHeap();
 
 public:
@@ -59,6 +54,11 @@ public:
   int getTaskCount() override;
 
   std::pair<std::vector<std::function<void()>>, int> getReadyTask() override;
+
+private:
+  std::vector<const TimedTaskNode *> timerHeap;
+  std::unordered_map<int, std::unique_ptr<TimedTaskNode>> nodeRegestry;
+  std::shared_mutex mutex;
 };
 
 #endif

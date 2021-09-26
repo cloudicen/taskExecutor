@@ -3,35 +3,37 @@
 void TimedTaskScheduler::maintainHeap() {
   std::make_heap(
       this->timerHeap.begin(), this->timerHeap.end(),
-      [](const TimerNode *a, const TimerNode *b) { return (*a) > (*b); });
+      [](const TimedTaskNode *a, const TimedTaskNode *b) { return (*a) > (*b); });
 }
 
 void TimedTaskScheduler::popHeap() {
   std::pop_heap(
       this->timerHeap.begin(), this->timerHeap.end(),
-      [](const TimerNode *a, const TimerNode *b) { return (*a) > (*b); });
+      [](const TimedTaskNode *a, const TimedTaskNode *b) { return (*a) > (*b); });
   this->timerHeap.pop_back();
 }
 
-void TimedTaskScheduler::pushHeap(const TimerNode *node) {
+void TimedTaskScheduler::pushHeap(const TimedTaskNode *node) {
   this->timerHeap.push_back(node);
   std::push_heap(
       this->timerHeap.begin(), this->timerHeap.end(),
-      [](const TimerNode *a, const TimerNode *b) { return (*a) > (*b); });
+      [](const TimedTaskNode *a, const TimedTaskNode *b) { return (*a) > (*b); });
 }
 
 int TimedTaskScheduler::addTask(std::function<void()> task, void *timeout_int) {
+  std::scoped_lock lk(this->mutex);
   int timeout = *reinterpret_cast<int *>(timeout_int);
   auto id = getNewTaskId();
   auto expireTime =
       std::chrono::system_clock::now() + std::chrono::milliseconds(timeout);
   auto [pt, success] = this->nodeRegestry.emplace(
-      std::make_pair(id, std::make_unique<TimerNode>(id, expireTime, task)));
+      std::make_pair(id, std::make_unique<TimedTaskNode>(id, expireTime, task)));
   pushHeap(pt->second.get());
   return id;
 }
 
 int TimedTaskScheduler::adjustTask(int id, void *timeout_int) {
+  std::scoped_lock lk(this->mutex);
   int timeout = *reinterpret_cast<int *>(timeout_int);
   auto pt = this->nodeRegestry.find(id);
   if (pt == this->nodeRegestry.end()) {
@@ -45,6 +47,7 @@ int TimedTaskScheduler::adjustTask(int id, void *timeout_int) {
 }
 
 int TimedTaskScheduler::removeTask(int id, bool doCall) {
+  std::scoped_lock lk(this->mutex);
   auto pt = this->nodeRegestry.find(id);
   if (pt == this->nodeRegestry.end()) {
     return -1;
@@ -68,15 +71,20 @@ int TimedTaskScheduler::removeTask(int id, bool doCall) {
 }
 
 void TimedTaskScheduler::clearTask() {
+  std::scoped_lock lk(this->mutex);
   timerHeap.clear();
   nodeRegestry.clear();
   resetTaskId();
 }
 
-int TimedTaskScheduler::getTaskCount() { return this->timerHeap.size(); }
+int TimedTaskScheduler::getTaskCount() { 
+  std::shared_lock lk(this->mutex);
+  return this->timerHeap.size();
+   }
 
 std::pair<std::vector<std::function<void()>>, int>
 TimedTaskScheduler::getReadyTask() {
+  std::scoped_lock lk(this->mutex);
   std::vector<std::function<void()>> taskList;
   int interval = 0;
   while (!this->timerHeap.empty()) {
