@@ -11,13 +11,14 @@
 #include <list>
 #include <mutex>
 #include <queue>
+#include <set>
 #include <thread>
 
 class GlobalTaskManager {
 private:
   static GlobalTaskManager *instance;
-  std::list<TaskSchedulerBase *> schedulerPolingList;
-  std::list<TaskSchedulerBase *> schedulerWaitingList;
+  std::set<TaskSchedulerBase *> schedulerPolingList;
+  std::set<TaskSchedulerBase *> schedulerWaitingList;
 
   std::thread *schedulerThread;
   bool stop = false;
