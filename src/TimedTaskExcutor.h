@@ -15,18 +15,15 @@
 
 class TimedTaskExcutor {
 private:
-  GlobalTaskManager *excutor;
   std::unique_ptr<TimedTaskSchedulerProxy> scheduler;
   std::thread schedulerThread;
 
 public:
-  TimedTaskExcutor()
-      : excutor(GlobalTaskManager::getInstance()),
-        scheduler(new TimedTaskSchedulerProxy()) {
-    excutor->addScheduler(this->scheduler->getSchedulerBase());
+  TimedTaskExcutor() : scheduler(new TimedTaskSchedulerProxy()) {
+    GlobalTaskManager::addScheduler(this->scheduler->getSchedulerBase());
   };
   ~TimedTaskExcutor() {
-    excutor->removeScheduler(this->scheduler->getSchedulerBase());
+    GlobalTaskManager::removeScheduler(this->scheduler->getSchedulerBase());
   };
 
   template <typename F, typename... Args>
@@ -36,7 +33,7 @@ public:
         std::bind(std::forward<F>(f), std::forward<Args>(args)...));
     int id = this->scheduler->addTask([taskPtr]() { (*taskPtr)(); }, timeout);
     //通知执行器，有新任务加入
-    excutor->schedulerOnNewTask(this->scheduler->getSchedulerBase());
+    GlobalTaskManager::schedulerOnNewTask(this->scheduler->getSchedulerBase());
     return {id, taskPtr->get_future()};
   }
 
@@ -45,7 +42,7 @@ public:
     auto task = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
     int id = this->scheduler->addTask(task, timeout);
     //通知执行器，有新任务加入
-    excutor->schedulerOnNewTask(this->scheduler->getSchedulerBase());
+    GlobalTaskManager::schedulerOnNewTask(this->scheduler->getSchedulerBase());
     return id;
   }
 };

@@ -47,7 +47,7 @@ void GlobalTaskManager::polling() {
         auto [TaskList, interval] = (*schedulerIt)->getReadyTask();
         //提交任务到线程池
         for (auto task : TaskList) {
-          this->pool->submit(task);
+          ThreadPool::submit(task);
         }
         //更新轮询等待时间，为所有调度器返回的最小值。
         minPollingInterval = std::min(minPollingInterval, interval);
@@ -57,43 +57,46 @@ void GlobalTaskManager::polling() {
 }
 
 void GlobalTaskManager::addScheduler(TaskSchedulerBase *schedulerPtr) {
+  auto instance = GlobalTaskManager::getInstance();
   {
-    std::unique_lock<std::mutex> ul(this->mtx_);
-    this->schedulerWaitingList.remove(schedulerPtr);
-    for (auto scheduler : this->schedulerPolingList) {
+    std::unique_lock<std::mutex> ul(instance->mtx_);
+    instance->schedulerWaitingList.remove(schedulerPtr);
+    for (auto scheduler : instance->schedulerPolingList) {
       if (scheduler == schedulerPtr) {
         return;
       }
     }
-    this->schedulerPolingList.push_back(schedulerPtr);
+    instance->schedulerPolingList.push_back(schedulerPtr);
     // 新任务调度器加入，需要立即查询任务就绪列表，将等待超时时长置0
-    minPollingInterval = 0;
+    instance->minPollingInterval = 0;
   }
-  this->cv_.notify_one();
+  instance->cv_.notify_one();
 }
 
 void GlobalTaskManager::removeScheduler(TaskSchedulerBase *schedulerPtr) {
-  std::unique_lock<std::mutex> ul(this->mtx_);
-  this->schedulerWaitingList.remove(schedulerPtr);
-  this->schedulerPolingList.remove(schedulerPtr);
+  auto instance = GlobalTaskManager::getInstance();
+  std::unique_lock<std::mutex> ul(instance->mtx_);
+  instance->schedulerWaitingList.remove(schedulerPtr);
+  instance->schedulerPolingList.remove(schedulerPtr);
 }
 
 void GlobalTaskManager::schedulerOnNewTask(TaskSchedulerBase *schedulerPtr) {
+  auto instance = GlobalTaskManager::getInstance();
   {
-    std::unique_lock<std::mutex> ul(this->mtx_);
-    this->schedulerWaitingList.remove(schedulerPtr);
+    std::unique_lock<std::mutex> ul(instance->mtx_);
+    instance->schedulerWaitingList.remove(schedulerPtr);
     bool alreadyHaveFlag = false;
-    for (auto scheduler : this->schedulerPolingList) {
+    for (auto scheduler : instance->schedulerPolingList) {
       if (scheduler == schedulerPtr) {
         alreadyHaveFlag = true;
         break;
       }
     }
     if (!alreadyHaveFlag) {
-      this->schedulerPolingList.push_back(schedulerPtr);
+      instance->schedulerPolingList.push_back(schedulerPtr);
     }
     // 新任务加入，需要立即查询任务就绪列表，将等待超时时长置0
-    minPollingInterval = 0;
+    instance->minPollingInterval = 0;
   }
-  this->cv_.notify_one();
+  instance->cv_.notify_one();
 }

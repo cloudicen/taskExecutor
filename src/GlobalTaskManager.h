@@ -15,7 +15,6 @@
 
 class GlobalTaskManager {
 private:
-  ThreadPool *pool;
   static GlobalTaskManager *instance;
   std::list<TaskSchedulerBase *> schedulerPolingList;
   std::list<TaskSchedulerBase *> schedulerWaitingList;
@@ -30,7 +29,7 @@ private:
 
   int minPollingInterval = 0;
 
-  GlobalTaskManager() : pool(ThreadPool::getInstance()){};
+  GlobalTaskManager(){};
   void polling();
 
 public:
@@ -47,11 +46,11 @@ public:
     this->schedulerThread->join();
   }
 
-  void addScheduler(TaskSchedulerBase *);
+  static void addScheduler(TaskSchedulerBase *);
 
-  void removeScheduler(TaskSchedulerBase *);
+  static void removeScheduler(TaskSchedulerBase *);
 
-  void schedulerOnNewTask(TaskSchedulerBase *);
+  static void schedulerOnNewTask(TaskSchedulerBase *);
 
 private:
   class Garbo //设置为私有防止外界访问

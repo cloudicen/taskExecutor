@@ -16,7 +16,7 @@ public:
   ~ThreadPool() { joinAll(); };
   static ThreadPool *getInstance(size_t threadNum = 8);
   void joinAll();
-  void submit(std::function<void()> task);
+  static void submit(std::function<void()> task);
 
 private:
   static ThreadPool *instance;

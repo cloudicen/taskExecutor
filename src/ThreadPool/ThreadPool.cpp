@@ -46,12 +46,13 @@ void ThreadPool::joinAll() {
 }
 
 void ThreadPool::submit(std::function<void()> task) {
+  auto instance = ThreadPool::getInstance();
   {
-    std::unique_lock<std::mutex> ul(mtx_);
-    if (stop_) {
+    std::unique_lock<std::mutex> ul(instance->mtx_);
+    if (instance->stop_) {
       throw std::runtime_error("submit on stopped ThreadPool");
     }
-    tasks_.emplace(task);
+    instance->tasks_.emplace(task);
   }
-  cv_.notify_one();
+  instance->cv_.notify_one();
 }
