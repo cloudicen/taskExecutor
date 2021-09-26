@@ -2,7 +2,7 @@
 
 std::once_flag ThreadPool::threadPoolConstruct;
 
-ThreadPool ThreadPool::*instance;
+ThreadPool* ThreadPool::instance;
 
 ThreadPool *ThreadPool::getInstance(size_t threadNum) {
   if(instance != nullptr){

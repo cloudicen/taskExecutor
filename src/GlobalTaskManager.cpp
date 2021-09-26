@@ -1,6 +1,7 @@
 #include "GlobalTaskManager.h"
 
 std::once_flag GlobalTaskManager::constructFlag;
+GlobalTaskManager *GlobalTaskManager::instance;
 
 GlobalTaskManager *GlobalTaskManager::getInstance() {
   if (instance != nullptr) {
@@ -14,14 +15,14 @@ GlobalTaskManager *GlobalTaskManager::getInstance() {
 }
 
 void GlobalTaskManager::stopExcutor() {
-    assert(instance != nullptr);
-    {
-      std::unique_lock<std::mutex> ul(instance->mtx_);
-      instance->stopFlag = true;
-    }
-    instance->cv_.notify_all();
-    instance->schedulerThread->join();
+  assert(instance != nullptr);
+  {
+    std::unique_lock<std::mutex> ul(instance->mtx_);
+    instance->stopFlag = true;
   }
+  instance->cv_.notify_all();
+  instance->schedulerThread->join();
+}
 
 void GlobalTaskManager::polling() {
   using namespace std::chrono_literals;
@@ -30,8 +31,7 @@ void GlobalTaskManager::polling() {
       std::unique_lock<std::mutex> ul(this->mtx_);
       //当等待时间不为0且轮询队列不为空时才跳过等待，或者是停止标志位被设置
       this->cv_.wait_for(ul, pollingInterval * 1ms, [this]() {
-        return (pollingInterval <= 0 &&
-                !this->schedulerPolingList.empty()) ||
+        return (pollingInterval <= 0 && !this->schedulerPolingList.empty()) ||
                stopFlag;
       });
 
@@ -46,9 +46,8 @@ void GlobalTaskManager::polling() {
            schedulerIt != this->schedulerPolingList.end(); schedulerIt++) {
         //若调度器内无事件，则移入等待队列。调度器添加事件时需要唤醒
         if ((*schedulerIt)->getTaskCount() == 0) {
-          auto scherdulerPtr = (*schedulerIt);
-          schedulerIt = schedulerPolingList.erase(schedulerIt);
-          schedulerWaitingList.push_back(scherdulerPtr);
+          auto scherdulerToMove = schedulerWaitingList.extract(schedulerIt++);
+          schedulerWaitingList.insert(std::move(scherdulerToMove));
           continue;
         }
         //获取就绪任务列表
@@ -69,14 +68,12 @@ void GlobalTaskManager::addScheduler(TaskSchedulerBase *schedulerPtr) {
   auto instance = GlobalTaskManager::getInstance();
   {
     std::unique_lock<std::mutex> ul(instance->mtx_);
-    instance->schedulerWaitingList.remove(schedulerPtr);
-    for (auto scheduler : instance->schedulerPolingList) {
-      if (scheduler == schedulerPtr) {
-        return;
-      }
+    auto count = instance->schedulerWaitingList.count(schedulerPtr);
+    if (count > 0) {
+      return;
+    } else {
+      instance->schedulerPolingList.insert(schedulerPtr);
     }
-    instance->schedulerPolingList.push_back(schedulerPtr);
-    // 新任务调度器加入，需要立即查询任务就绪列表，将等待超时时长置0
     instance->pollingInterval = 0;
   }
   instance->cv_.notify_one();
@@ -84,27 +81,22 @@ void GlobalTaskManager::addScheduler(TaskSchedulerBase *schedulerPtr) {
 
 void GlobalTaskManager::removeScheduler(TaskSchedulerBase *schedulerPtr) {
   assert(schedulerPtr != nullptr);
-  auto instance =  GlobalTaskManager::getInstance();
+  auto instance = GlobalTaskManager::getInstance();
   std::unique_lock<std::mutex> ul(instance->mtx_);
-  instance->schedulerWaitingList.remove(schedulerPtr);
-  instance->schedulerPolingList.remove(schedulerPtr);
+  instance->schedulerWaitingList.erase(schedulerPtr);
+  instance->schedulerPolingList.erase(schedulerPtr);
 }
 
 void GlobalTaskManager::schedulerOnNewTask(TaskSchedulerBase *schedulerPtr) {
   assert(schedulerPtr != nullptr);
-  auto instance =  GlobalTaskManager::getInstance();
+  auto instance = GlobalTaskManager::getInstance();
   {
     std::unique_lock<std::mutex> ul(instance->mtx_);
-    instance->schedulerWaitingList.remove(schedulerPtr);
-    bool alreadyHaveFlag = false;
-    for (auto scheduler : instance->schedulerPolingList) {
-      if (scheduler == schedulerPtr) {
-        alreadyHaveFlag = true;
-        break;
-      }
-    }
-    if (!alreadyHaveFlag) {
-      instance->schedulerPolingList.push_back(schedulerPtr);
+    auto scheduler = instance->schedulerWaitingList.extract(schedulerPtr);
+    if (!scheduler.empty()) {
+      instance->schedulerPolingList.insert(std::move(scheduler));
+    } else {
+      instance->schedulerPolingList.insert(schedulerPtr);
     }
     // 新任务加入，需要立即查询任务就绪列表，将等待超时时长置0
     instance->pollingInterval = 0;

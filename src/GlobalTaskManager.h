@@ -7,11 +7,8 @@
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
-#include <functional>
-#include <future>
-#include <list>
 #include <mutex>
-#include <queue>
+#include <set>
 #include <thread>
 
 class GlobalTaskManager {
@@ -36,8 +33,8 @@ public:
 private:
   bool stopFlag = false;
   int pollingInterval = 0;
-  std::list<TaskSchedulerBase *> schedulerPolingList;
-  std::list<TaskSchedulerBase *> schedulerWaitingList;
+  std::set<TaskSchedulerBase *> schedulerPolingList;
+  std::set<TaskSchedulerBase *> schedulerWaitingList;
 
   std::thread *schedulerThread;
   std::mutex mtx_;
