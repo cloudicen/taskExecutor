@@ -3,14 +3,10 @@
 
 #include "GlobalTaskManager.h"
 #include "TaskScheduler/TimedScheduler/TimedTaskSchedulerProxy.h"
-#include "ThreadPool/ThreadPool.h"
 
-#include <condition_variable>
 #include <functional>
 #include <future>
 #include <memory>
-#include <mutex>
-#include <queue>
 #include <thread>
 
 class TimedTaskExcutor {
