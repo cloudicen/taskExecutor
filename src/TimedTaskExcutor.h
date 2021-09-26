@@ -40,6 +40,20 @@ public:
     return id;
   }
 
+   int addTask(std::function<void()> task, int timeout) {
+    return scheduler->addTask(task, timeout);
+  }
+
+  int adjustTask(int id, int timeout) {
+    return scheduler->adjustTask(id,timeout);
+  }
+
+  int removeTask(int id, bool doCall) {
+    return scheduler->removeTask(id, doCall);
+  }
+
+  void clearTask() { scheduler->clearTask(); }
+
 private:
   std::unique_ptr<TimedTaskSchedulerProxy> scheduler;
   static std::once_flag constructFlag;

@@ -19,6 +19,8 @@ int main() {
     auto c = excutor->addTaskWithFuture(7000, callBack, i++, &result);
     auto id = excutor->addTaskWithFuture(10000, ::callBack, i++, &result);
 
+    excutor->adjustTask(id.first,-5000);
+
     std::cout << id.second.get() << std::endl;
     std::cout << a.second.get() << std::endl;
   }
