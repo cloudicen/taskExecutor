@@ -2,17 +2,20 @@
 
 std::once_flag ThreadPool::threadPoolConstruct;
 
+ThreadPool ThreadPool::*instance;
+
 ThreadPool *ThreadPool::getInstance(size_t threadNum) {
-  static ThreadPool *insPtr = new ThreadPool();
-  auto instance = insPtr;
-  std::call_once(ThreadPool::threadPoolConstruct, [instance, threadNum]() {
+  if(instance != nullptr){
+    return instance;
+  }
+  std::call_once(ThreadPool::threadPoolConstruct, [threadNum]() {
     for (size_t i = 0; i < threadNum; ++i) {
-      instance->workers_.emplace_back([instance]() {
+      instance->workers_.emplace_back([]() {
         for (;;) {
           std::function<void()> task;
           {
             std::unique_lock<std::mutex> ul(instance->mtx_);
-            instance->cv_.wait(ul, [instance]() {
+            instance->cv_.wait(ul, []() {
               return instance->stop_ || !instance->tasks_.empty();
             });
             if (instance->stop_ && instance->tasks_.empty()) {
@@ -42,12 +45,13 @@ void ThreadPool::joinAll() {
 }
 
 void ThreadPool::submit(std::function<void()> task) {
+  auto instance = ThreadPool::getInstance();
   {
-    std::unique_lock<std::mutex> ul(mtx_);
-    if (stop_) {
+    std::unique_lock<std::mutex> ul(instance->mtx_);
+    if (instance->stop_) {
       throw std::runtime_error("submit on stopped ThreadPool");
     }
-    tasks_.emplace(task);
+    instance->tasks_.emplace(task);
   }
-  cv_.notify_one();
+  instance->cv_.notify_one();
 }

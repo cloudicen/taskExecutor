@@ -6,6 +6,7 @@
 #include <future>
 #include <mutex>
 #include <queue>
+#include <cassert>
 #include <thread>
 
 class ThreadPool {
@@ -16,7 +17,7 @@ public:
   ~ThreadPool() { joinAll(); };
   static ThreadPool *getInstance(size_t threadNum = 8);
   static void joinAll();
-  void submit(std::function<void()> task);
+  static void submit(std::function<void()> task);
 
 private:
   bool stop_;
@@ -25,6 +26,9 @@ private:
   std::mutex mtx_;
   std::condition_variable cv_;
   static std::once_flag threadPoolConstruct;
+
+private:
+  static ThreadPool *instance;
 };
 
 #endif
