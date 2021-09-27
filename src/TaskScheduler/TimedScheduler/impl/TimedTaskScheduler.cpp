@@ -23,7 +23,7 @@ void TimedTaskScheduler::pushHeap(TimedTaskNode *node) {
                  });
 }
 
-int TimedTaskScheduler::addTask(std::function<void()> task,
+int TimedTaskScheduler::addTask(std::function<void()> &&task,
                                 std::initializer_list<void *> options) {
   std::scoped_lock lk(this->mutex);
   int timeout = *reinterpret_cast<int *>(*options.begin());
@@ -33,7 +33,7 @@ int TimedTaskScheduler::addTask(std::function<void()> task,
       std::chrono::system_clock::now() + std::chrono::milliseconds(timeout);
   auto [pt, success] = this->nodeRegestry.emplace(
       std::make_pair(id, std::make_unique<TimedTaskNode>(
-                             id, expireTime, task, timeout, isRepeatTask)));
+                             id, expireTime, std::forward<std::function<void()>&&>(task), timeout, isRepeatTask)));
   pushHeap(pt->second.get());
   return id;
 }

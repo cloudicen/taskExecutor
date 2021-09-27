@@ -18,7 +18,7 @@ class TimedTaskNode {
 public:
   explicit TimedTaskNode(
       int _id, std::chrono::time_point<std::chrono::system_clock> _expireTime,
-      std::function<void()> _callBack,int _interval,bool _repeat)
+      std::function<void()> &&_callBack,int _interval,bool _repeat)
       : id(_id), expireTime(_expireTime), callBack(_callBack),interval(_interval),repeatTask(_repeat){};
   ~TimedTaskNode() = default;
 
@@ -46,7 +46,7 @@ public:
   ~TimedTaskScheduler() = default;
   TimedTaskScheduler(const TimedTaskScheduler &) = delete;
 
-  int addTask(std::function<void()> Task,
+  int addTask(std::function<void()>&& Task,
               std::initializer_list<void *> options) override;
 
   int adjustTask(int id, std::initializer_list<void *> options) override;

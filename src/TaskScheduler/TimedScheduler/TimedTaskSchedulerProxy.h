@@ -12,8 +12,8 @@ public:
   TimedTaskSchedulerProxy() : timedSchedulerBase(new TimedTaskScheduler()){};
   ~TimedTaskSchedulerProxy() = default;
 
-  int addTask(std::function<void()> task, int timeout,bool isRepeatTask=false) {
-    return timedSchedulerBase->addTask(task, {&timeout,&isRepeatTask});
+  int addTask(std::function<void()> && task, int timeout,bool isRepeatTask=false) {
+    return timedSchedulerBase->addTask(std::forward<std::function<void()>&&>(task), {&timeout,&isRepeatTask});
   }
 
   int adjustTask(int id, int timeout,bool isRepeatTask) {

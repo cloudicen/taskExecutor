@@ -14,7 +14,7 @@ public:
   ~BasicTaskScheduler() = default;
   BasicTaskScheduler(const BasicTaskScheduler &) = delete;
 
-  int addTask(std::function<void()> Task, std::initializer_list<void*> options = {}) override;
+  int addTask(std::function<void()>&& Task, std::initializer_list<void*> options = {}) override;
 
   int adjustTask(int id, std::initializer_list<void*> options = {}) override{return 0;};
 

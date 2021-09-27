@@ -12,8 +12,8 @@ public:
   BasicTaskSchedulerProxy() : BasicSchedulerBase(new BasicTaskScheduler()){};
   ~BasicTaskSchedulerProxy() = default;
 
-  int addTask(std::function<void()> task) {
-    return BasicSchedulerBase->addTask(task);
+  int addTask(std::function<void()>&& task) {
+    return BasicSchedulerBase->addTask(std::forward<std::function<void()>&&>(task));
   }
 
   void clearTask() { BasicSchedulerBase->clearTask(); }

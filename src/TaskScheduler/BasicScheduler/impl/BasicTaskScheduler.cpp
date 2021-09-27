@@ -1,6 +1,6 @@
 #include "BasicTaskScheduler.h"
 
-int BasicTaskScheduler::addTask(std::function<void()> task, std::initializer_list<void*> options) {
+int BasicTaskScheduler::addTask(std::function<void()>&& task, std::initializer_list<void*> options) {
   std::scoped_lock lk(this->mutex);
   this->taskList.emplace_back(task);
   return 0;
