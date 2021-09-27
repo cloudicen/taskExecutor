@@ -1,4 +1,5 @@
 #include "../src/TimedTaskExecutor.h"
+#include "../src/BasicTaskExecutor.h"
 
 #include <iostream>
 #include <thread>
@@ -14,6 +15,7 @@ int main() {
   int i = 0;
   int result = 0;
   TimedTaskExecutor *executor = TimedTaskExecutor::getInstance();
+  BasicTaskExecutor *b_executor = BasicTaskExecutor::getInstance();
   auto a = executor->addTaskWithFuture(5000, callBack, i++, &result);
   auto b = executor->addTaskWithFuture(14000, callBack, i++, &result);
   auto c = executor->addTaskWithFuture(7000, callBack, i++, &result);
@@ -23,6 +25,13 @@ int main() {
 
   std::cout << id.second.get() << std::endl;
   std::cout << a.second.get() << std::endl;
+
+  auto ff = b_executor->addTaskWithFuture(callBack, i++, &result);
+  auto gg = b_executor->addTaskWithFuture(callBack, i++, &result);
+  auto hh = b_executor->addTaskWithFuture(callBack, i++, &result);
+
+  std::cout << gg.second.get() << std::endl;
+  
   auto pp = executor->addTask(1000,true, callBack, i++, &result);
   GlobalTaskManager::stopService();
   std::cout << result << std::endl;
