@@ -15,7 +15,7 @@ void TimedTaskScheduler::popHeap() {
   this->timerHeap.pop_back();
 }
 
-void TimedTaskScheduler::pushHeap(const TimedTaskNode *node) {
+void TimedTaskScheduler::pushHeap(TimedTaskNode *node) {
   this->timerHeap.push_back(node);
   std::push_heap(this->timerHeap.begin(), this->timerHeap.end(),
                  [](const TimedTaskNode *a, const TimedTaskNode *b) {
@@ -27,27 +27,39 @@ int TimedTaskScheduler::addTask(std::function<void()> task,
                                 std::initializer_list<void *> options) {
   std::scoped_lock lk(this->mutex);
   int timeout = *reinterpret_cast<int *>(*options.begin());
+  bool isRepeatTask = *reinterpret_cast<bool *>(*(options.begin() + 1));
   auto id = getNewTaskId();
   auto expireTime =
       std::chrono::system_clock::now() + std::chrono::milliseconds(timeout);
-  auto [pt, success] = this->nodeRegestry.emplace(std::make_pair(
-      id, std::make_unique<TimedTaskNode>(id, expireTime, task)));
+  auto [pt, success] = this->nodeRegestry.emplace(
+      std::make_pair(id, std::make_unique<TimedTaskNode>(
+                             id, expireTime, task, timeout, isRepeatTask)));
   pushHeap(pt->second.get());
   return id;
 }
 
 int TimedTaskScheduler::adjustTask(int id,
                                    std::initializer_list<void *> options) {
+  assert((options.size()) == 2);
   std::scoped_lock lk(this->mutex);
-  int timeout = *reinterpret_cast<int *>(*options.begin());
+  
   auto pt = this->nodeRegestry.find(id);
   if (pt == this->nodeRegestry.end()) {
     return -1;
   }
+  
+  if(*(options.begin() + 1) != nullptr) {
+    bool isRepeatTask = *reinterpret_cast<bool *>(*(options.begin() + 1));
+    pt->second->repeatTask = isRepeatTask;
+  }
 
-  pt->second->expireTime =
+  if(*(options.begin()) != nullptr) {
+      int timeout = *reinterpret_cast<int *>(*options.begin());
+      pt->second->expireTime =
       pt->second->expireTime + std::chrono::milliseconds(timeout);
-  maintainHeap();
+      maintainHeap();
+  }
+
   return id;
 }
 
@@ -102,8 +114,14 @@ TimedTaskScheduler::getReadyTask() {
       break;
     } else {
       taskList.push_back(node->callBack);
-      popHeap();
-      this->nodeRegestry.erase(node->id);
+      if (node->repeatTask) {
+        node->expireTime =
+            node->expireTime + std::chrono::milliseconds(node->interval);
+        maintainHeap();
+      } else {
+        popHeap();
+        this->nodeRegestry.erase(node->id);
+      }
     }
   }
   return {taskList, interval};

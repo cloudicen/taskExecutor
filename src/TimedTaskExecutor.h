@@ -32,16 +32,24 @@ public:
   }
 
   template <typename F, typename... Args>
-  static auto addTask(int timeout, F &&f, Args &&... args) -> int {
+  static auto addTask(int timeout,bool repeatTask, F &&f, Args &&... args) -> int {
     auto task = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
-    int id = instance->scheduler->addTask(task, timeout);
+    int id = instance->scheduler->addTask(task, timeout, repeatTask);
     //通知任务调度管理器，有新任务加入
     GlobalTaskManager::schedulerOnNewTask(instance->scheduler->getSchedulerBase());
     return id;
   }
 
+  int adjustTask(int id, int timeout,bool isRepeatTask) {
+    return scheduler->adjustTask(id,timeout,isRepeatTask);
+  }
+
   int adjustTask(int id, int timeout) {
-    return scheduler->adjustTask(id,timeout);
+    return scheduler->adjustTask(id, timeout);
+  }
+
+  int adjustTask(int id, bool isRepeatTask) {
+    return scheduler->adjustTask(id, isRepeatTask);
   }
 
   int removeTask(int id, bool doCall) {
