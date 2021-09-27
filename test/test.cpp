@@ -1,4 +1,4 @@
-#include "../src/TimedTaskExcutor.h"
+#include "../src/TimedTaskExecutor.h"
 
 #include <iostream>
 #include <thread>
@@ -13,17 +13,17 @@ int callBack(int i, int *result) {
 int main() {
   int i = 0;
   int result = 0;
-  TimedTaskExcutor *excutor = TimedTaskExcutor::getInstance();
-  auto a = excutor->addTaskWithFuture(5000, callBack, i++, &result);
-  auto b = excutor->addTaskWithFuture(14000, callBack, i++, &result);
-  auto c = excutor->addTaskWithFuture(7000, callBack, i++, &result);
-  auto id = excutor->addTaskWithFuture(10000, ::callBack, i++, &result);
+  TimedTaskExecutor *executor = TimedTaskExecutor::getInstance();
+  auto a = executor->addTaskWithFuture(5000, callBack, i++, &result);
+  auto b = executor->addTaskWithFuture(14000, callBack, i++, &result);
+  auto c = executor->addTaskWithFuture(7000, callBack, i++, &result);
+  auto id = executor->addTaskWithFuture(10000, ::callBack, i++, &result);
 
-  excutor->adjustTask(id.first, -5000);
+  executor->adjustTask(id.first, -5000);
 
   std::cout << id.second.get() << std::endl;
   std::cout << a.second.get() << std::endl;
-  auto pp = excutor->addTaskWithFuture(5000, callBack, i++, &result);
+  auto pp = executor->addTaskWithFuture(5000, callBack, i++, &result);
   GlobalTaskManager::stopService();
   std::cout << result << std::endl;
 }

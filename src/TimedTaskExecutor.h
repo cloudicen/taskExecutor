@@ -1,5 +1,5 @@
-#ifndef __TIMED_TASK_EXCUTOR_H__
-#define __TIMED_TASK_EXCUTOR_H__
+#ifndef __TIMED_TASK_EXECUTOR_H__
+#define __TIMED_TASK_EXECUTOR_H__
 
 #include "GlobalTaskManager.h"
 #include "TaskScheduler/TimedScheduler/TimedTaskSchedulerProxy.h"
@@ -9,14 +9,14 @@
 #include <memory>
 #include <thread>
 
-class TimedTaskExcutor {
+class TimedTaskExecutor {
 private:
-  TimedTaskExcutor() : scheduler(new TimedTaskSchedulerProxy()) {
+  TimedTaskExecutor() : scheduler(new TimedTaskSchedulerProxy()) {
     GlobalTaskManager::addScheduler(this->scheduler->getSchedulerBase());
   };
 public:
-  static TimedTaskExcutor* getInstance();
-  ~TimedTaskExcutor() {
+  static TimedTaskExecutor* getInstance();
+  ~TimedTaskExecutor() {
     GlobalTaskManager::removeScheduler(this->scheduler->getSchedulerBase());
   };
 
@@ -53,7 +53,7 @@ public:
 private:
   std::unique_ptr<TimedTaskSchedulerProxy> scheduler;
   static std::once_flag constructFlag;
-  static TimedTaskExcutor* instance;
+  static TimedTaskExecutor* instance;
 
 private:
   class Garbo //设置为私有防止外界访问
@@ -61,9 +61,9 @@ private:
   public:
     ~Garbo() //实际去析构new的单例对象
     {
-      if (TimedTaskExcutor::instance != NULL) {
-        delete TimedTaskExcutor::instance;
-        TimedTaskExcutor::instance = nullptr;
+      if (TimedTaskExecutor::instance != NULL) {
+        delete TimedTaskExecutor::instance;
+        TimedTaskExecutor::instance = nullptr;
       }
     }
   };
