@@ -9,7 +9,7 @@ GlobalTaskManager *GlobalTaskManager::getInstance() {
   }
   std::call_once(GlobalTaskManager::constructFlag, []() {
     instance = new GlobalTaskManager();
-    instance->schedulerThread = new std::thread([]() { instance->polling(); });
+    instance->managerThread = new std::thread([]() { instance->polling(); });
   });
   return instance;
 }
@@ -21,7 +21,7 @@ void GlobalTaskManager::stopService() {
     instance->stopFlag = true;
   }
   instance->cv_.notify_all();
-  instance->schedulerThread->join();
+  instance->managerThread->join();
 }
 
 void GlobalTaskManager::polling() {
